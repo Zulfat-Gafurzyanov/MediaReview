@@ -1,5 +1,48 @@
+from pyexpat import model
+from turtle import mode
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth.models import AbstractUser
+
+
+# class User(AbstractUser):
+#     USER = 'user'
+#     MODERATOR = 'moderator'
+#     ADMIN = 'admin'
+
+#     ROLE_CHOICES = [
+#         (USER, 'Пользователь'),
+#         (MODERATOR, 'Модератор'),
+#         (ADMIN, 'Администратор'),
+#     ]
+
+#     username = models.CharField(
+#         max_length=150,
+#         null=False,
+#         unique=True
+#     )
+
+#     email = models.CharField(
+#         max_length=254,
+#         null=False
+#     )
+
+#     role = models.CharField(
+#         max_length=20,
+#         choices=ROLE_CHOICES,
+#         default=USER,
+#         verbose_name='Роль'
+#     )
+
+#     bio = models.CharField(max_length=254)
+
+#     @property
+#     def is_admin(self):
+#         return self.role == self.ADMIN or self.is_superuser
+
+#     @property
+#     def is_moderator(self):
+#         return self.role == self.MODERATOR
 
 
 class Category(models.Model):

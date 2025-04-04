@@ -21,7 +21,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, title=self.get_title())
+        serializer.save(title=self.get_title())
 
 
 class TitleViewSet(viewsets.ModelViewSet):
