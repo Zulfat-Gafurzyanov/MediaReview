@@ -9,6 +9,7 @@ router_v1 = SimpleRouter()
 
 router_v1.register('categories', CategoryViewSet)
 
+router_v1.register('genres', GenreViewSet)
 
 urlpatterns = [
     path(f'{APIVERSION}/', include(router_v1.urls)),
