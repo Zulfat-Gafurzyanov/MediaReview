@@ -1,5 +1,7 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class Category(models.Model):
@@ -62,22 +64,46 @@ class GenreTitle(models.Model):
 
 
 class Review(models.Model):
-    """Модель отзывов"""
+    """Отзыв на произведение."""
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
-        related_name='reviews',
-        verbose_name='Произведение'
+        related_name='reviews'
     )
+    text = models.TextField()
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reviews'
+    )
+    score = models.PositiveSmallIntegerField()
+    pub_date = models.DateTimeField(auto_now_add=True)
 
-    text = models.TextField(verbose_name='Текст отзыва', blank=True)
-    score = models.IntegerField(
-        validators=[
-            MaxValueValidator(10, message='Оценка не может быть больше 10.'),
-            MinValueValidator(1, message='Оценка не может быть меньше 1.')
-        ],
-        verbose_name='Оценка'
-    )
+    class Meta:
+        unique_together = ('title', 'author')
+        ordering = ['-pub_date']
 
     def __str__(self):
-        return self.text
+        return f'Review by {self.author} on {self.title}'
+
+
+class Comment(models.Model):
+    """Комментарий к отзыву."""
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    text = models.TextField()
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    pub_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-pub_date']
+
+    def __str__(self):
+        return f'Comment by {self.author} on review {self.review.id}'
