@@ -1,48 +1,7 @@
-from pyexpat import model
-from turtle import mode
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
 
-
-# class User(AbstractUser):
-#     USER = 'user'
-#     MODERATOR = 'moderator'
-#     ADMIN = 'admin'
-
-#     ROLE_CHOICES = [
-#         (USER, 'Пользователь'),
-#         (MODERATOR, 'Модератор'),
-#         (ADMIN, 'Администратор'),
-#     ]
-
-#     username = models.CharField(
-#         max_length=150,
-#         null=False,
-#         unique=True
-#     )
-
-#     email = models.CharField(
-#         max_length=254,
-#         null=False
-#     )
-
-#     role = models.CharField(
-#         max_length=20,
-#         choices=ROLE_CHOICES,
-#         default=USER,
-#         verbose_name='Роль'
-#     )
-
-#     bio = models.CharField(max_length=254)
-
-#     @property
-#     def is_admin(self):
-#         return self.role == self.ADMIN or self.is_superuser
-
-#     @property
-#     def is_moderator(self):
-#         return self.role == self.MODERATOR
+User = get_user_model()
 
 
 class Category(models.Model):
@@ -102,26 +61,46 @@ class GenreTitle(models.Model):
 
 
 class Review(models.Model):
-    """Модель отзывов"""
+    """Отзыв на произведение."""
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
-        related_name='reviews',
-        verbose_name='Произведение'
+        related_name='reviews'
     )
+    text = models.TextField()
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reviews'
+    )
+    score = models.PositiveSmallIntegerField()
+    pub_date = models.DateTimeField(auto_now_add=True)
 
-    text = models.TextField(verbose_name='Текст отзыва', blank=True)
-    score = models.IntegerField(
-        validators=[
-            MaxValueValidator(10, message='Оценка не может быть больше 10.'),
-            MinValueValidator(1, message='Оценка не может быть меньше 1.')
-        ],
-        verbose_name='Оценка'
-    )
-
-    pub_date = models.DateTimeField(
-        'Дата публикации', auto_now_add=True
-    )
+    class Meta:
+        unique_together = ('title', 'author')
+        ordering = ['-pub_date']
 
     def __str__(self):
-        return self.text
+        return f'Review by {self.author} on {self.title}'
+
+
+class Comment(models.Model):
+    """Комментарий к отзыву."""
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    text = models.TextField()
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    pub_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-pub_date']
+
+    def __str__(self):
+        return f'Comment by {self.author} on review {self.review.id}'
