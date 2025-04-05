@@ -1,7 +1,14 @@
-from rest_framework import generics
+from rest_framework import generics, viewsets
 from rest_framework.exceptions import NotFound
-from reviews.models import Title, Review
-from .serializers import ReviewSerializer
+from reviews.models import Genre, Title, Review
+from .serializers import GenreSerializer, ReviewSerializer
+
+
+class GenreViewSet(viewsets.ModelViewSet):
+    """Вьюсет для модели жанр произведения."""
+
+    guery_set = Genre.objects.all()
+    serializers_class = GenreSerializer
 
 
 class ReviewListAPIView(generics.ListAPIView):

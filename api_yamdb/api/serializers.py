@@ -1,6 +1,14 @@
 # serializers.py
 from rest_framework import serializers
-from reviews.models import Review
+from reviews.models import Genre, Review
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели жанр произведения."""
+
+    class Meta:
+        model = Genre
+        fields = ('id', 'name', 'slug')
 
 
 class ReviewSerializer(serializers.ModelSerializer):
