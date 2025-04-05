@@ -1,23 +1,17 @@
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
-from .views import (
-    ReviewViewSet,
-    CommentViewSet
-)
+from .views import CategoryViewSet, ReviewListAPIView
 
-router = DefaultRouter()
-router.register(
-    r'titles/(?P<title_id>\d+)/reviews',
-    ReviewViewSet,
-    basename='reviews'
-)
-router.register(
-    r'titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d)+/comments',
-    CommentViewSet,
-    basename='review-comments'
-)
+APIVERSION = 'v1'
+
+router_v1 = SimpleRouter()
+
+router_v1.register('categories', CategoryViewSet)
+
+router_v1.register('genres', GenreViewSet)
 
 urlpatterns = [
-    path('v1/', include(router.urls)),
+    path(f'{APIVERSION}/', include(router_v1.urls)),
+    path('titles/<int:title_id>/reviews/', ReviewListAPIView.as_view(), name='review-list'),
 ]

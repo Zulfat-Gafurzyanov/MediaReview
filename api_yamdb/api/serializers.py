@@ -1,8 +1,25 @@
 from rest_framework import serializers
-from reviews.models import Review, Comment
+from reviews.models import Genre, Review, Comment, Category
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели жанр произведения."""
+
+    class Meta:
+        model = Genre
+        fields = ('id', 'name', 'slug')
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """Сериализатор для модели категории произведения."""
+
+    class Meta:
+        model = Category
+        fields = ('id', 'name', 'slug')
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели отзывов."""
     author = serializers.ReadOnlyField(source='author.username')
     pub_date = serializers.ReadOnlyField()
 
