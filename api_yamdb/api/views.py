@@ -2,21 +2,45 @@ from rest_framework import viewsets, permissions
 from rest_framework.exceptions import NotFound
 
 from reviews.models import Genre, Category, Title, Review, Comment
-from .serializers import GenreSerializer, CategorySerializer, ReviewSerializer, CommentSerializer
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSerializer,
+    ReviewSerializer,
+    TitleSerializer
+)
 
 
 class GenreViewSet(viewsets.ModelViewSet):
-    """Вьюсет для модели жанр произведения."""
+    """
+    ViewSet для работы с жанрами.
+    Эндпоинт: /api/v1/genres/
+    """
 
-    guery_set = Genre.objects.all()
+    gueryset = Genre.objects.all()
     serializers_class = GenreSerializer
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    """Вьюсет для модели Category."""
+    """
+    ViewSet для работы с категориями.
+    Эндпоинт: /api/v1/categories/
+    """
 
-    guery_set = Category.objects.all()
+    gueryset = Category.objects.all()
     serializer_class = CategorySerializer
+
+
+class TitleViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet для работы с произведениями.
+    Эндпоинты:
+    - /api/v1/titles/
+    - /api/v1/titles/<titles_id>/
+    """
+
+    queryset = Title.objects.all()
+    serializer_class = TitleSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
