@@ -2,7 +2,7 @@ import csv
 from django.core.management.base import BaseCommand
 from django.apps import apps
 from django.db.models import Model
-
+from reviews.models import Category
 
 class Command(BaseCommand):
     help = 'Импортирует данные из CSV-файла в базу данных'
@@ -16,7 +16,7 @@ class Command(BaseCommand):
                             help='Путь к CSV-файлу для импорта')
 
     def handle(self, *args, **kwargs):
-        model_name = kwargs['model_name']
+        model_name =  kwargs['model_name']
         csv_file = kwargs['csv_file']
 
         try:
@@ -30,10 +30,16 @@ class Command(BaseCommand):
                 reader = csv.DictReader(file)
                 for row in reader:
                     fields = {}
-                    # Обрабатываем каждую строку
+
                     for key, value in row.items():
-                        # Проверяем соответствие поля модели
-                        if hasattr(model, key):
+                        if key == 'category':
+                            try:
+                                # Преобразуем ID в объект Category
+                                fields['category'] = Category.objects.get(id=value)
+                            except Category.DoesNotExist:
+                                self.stderr.write(self.style.ERROR(f'Категория с id={value} не найдена.'))
+                                continue  # пропускаем эту строку
+                        elif hasattr(model, key):
                             fields[key] = value
 
                     # Определяем уникальные ключи
