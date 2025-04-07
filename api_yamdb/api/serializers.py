@@ -1,5 +1,16 @@
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.tokens import default_token_generator
 from rest_framework import serializers
-from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
+from reviews.models import (Category,
+                            Comment,
+                            Genre,
+                            GenreTitle,
+                            Review,
+                            Title,
+                            User)
+
+from api.constants import LIMIT_USERNAME, LIMIT_EMAIL
+from api.validators import user_validator
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -65,3 +76,57 @@ class TitleSerializer(serializers.ModelSerializer):
         for genre in genres:
             GenreTitle.objects.create(genre=genre, title=title)
         return title
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name',
+                  'last_name', 'bio', 'role']
+
+
+class UsernameField(serializers.Serializer):
+    username = serializers.CharField(
+        max_length=LIMIT_USERNAME,
+        validators=[user_validator],
+    )
+
+
+class SignUpSerializer(UsernameField):
+    email = serializers.EmailField(
+        max_length=LIMIT_EMAIL,
+        required=True
+    )
+
+    def validate(self, data):
+        username_field = data.get('username')
+        email_field = data.get('email')
+        if User.objects.filter(
+            username=username_field,
+            email=email_field
+        ).exists():
+            return data
+        if (
+            User.objects.filter(username=username_field).exists()
+            or User.objects.filter(email=email_field).exists()
+        ):
+            raise serializers.ValidationError(
+                "Никнейм или почта повторяются.")
+        return data
+
+    def create(self, validated_data):
+        return User.objects.get_or_create(**validated_data)[0]
+
+
+class TokenObtainSerializer(UsernameField):
+    confirmation_code = serializers.CharField()
+
+    def validate(self, data):
+        username = data.get('username')
+        confirmation_code = data.get('confirmation_code')
+        user = get_object_or_404(User, username=username)
+        if not default_token_generator.check_token(user, confirmation_code):
+            raise serializers.ValidationError(
+                "Код подтверждения невалиден"
+            )
+        return data
