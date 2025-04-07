@@ -44,22 +44,24 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class TitleSerializer(serializers.ModelSerializer):
     """Сериализатор для модели произведения."""
-    category = serializers.StringRelatedField(read_only=True)
-    genres = GenreSerializer(many=True, required=True)
+    category = serializers.SlugRelatedField(
+        slug_field='name', queryset=Category.objects.all())
+    genres = serializers.SlugRelatedField(
+        slug_field='name', queryset=Genre.objects.all(), many=True)
 
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'description', 'category', 'genres')
 
     def create(self, validated_data):
-        """Функция для сохранения жанра произведения."""
-        # Извлекаем жанр, остальные поля передаем через **validated_data.
-        # Создаем произведение.
+        """Функция для сохранения произведения."""
+
+        # Извлекаем жанры и категорию, остальные поля передаем через
+        # **validated_data. Создаем произведение.
         genres = validated_data.pop('genres')
-        title = Title.objects.create(**validated_data)
-        # Для кажого жанра создаем запись.
+        category = validated_data.pop('category')
+        title = Title.objects.create(category=category, **validated_data)
+        # Связываем жанры с произведением.
         for genre in genres:
-            new_genre, status = Genre.objects.get_or_create(**genre)
-        # Связываем поля в вспомогательной таблице.
-            GenreTitle.objects.create(genre=new_genre, title=title)
+            GenreTitle.objects.create(genre=genre, title=title)
         return title

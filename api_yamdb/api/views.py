@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.exceptions import NotFound
 
 from reviews.models import Genre, Category, Title, Review, Comment
+# from .permissions import AdminOrReadOnly 
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
@@ -17,8 +18,9 @@ class GenreViewSet(viewsets.ModelViewSet):
     Эндпоинт: /api/v1/genres/
     """
 
-    gueryset = Genre.objects.all()
-    serializers_class = GenreSerializer
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    #permission_classes = (AdminOrReadOnly,)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -27,8 +29,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
     Эндпоинт: /api/v1/categories/
     """
 
-    gueryset = Category.objects.all()
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    #permission_classes = (AdminOrReadOnly,)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
