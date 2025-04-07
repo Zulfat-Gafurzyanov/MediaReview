@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 User = get_user_model()
 
@@ -29,8 +30,8 @@ class Title(models.Model):
 
     name = models.CharField(max_length=256)
     year = models.PositiveSmallIntegerField()
-    description = models.CharField(max_length=256, blank=True)
-    category = models.OneToOneField(
+    description = models.TextField(blank=True)
+    category = models.ForeignKey(
         Category,
         related_name='titles',
         on_delete=models.SET_NULL,
@@ -38,7 +39,8 @@ class Title(models.Model):
     )
     genres = models.ManyToManyField(
         Genre,
-        through='GenreTitle'
+        through='GenreTitle',
+        related_name='titles'
     )
 
     def __str__(self):
@@ -50,17 +52,15 @@ class GenreTitle(models.Model):
 
     genre = models.ForeignKey(
         Genre,
-        on_delete=models.SET_NULL,
-        null=True
+        on_delete=models.CASCADE
     )
     title = models.ForeignKey(
         Title,
-        on_delete=models.SET_NULL,
-        null=True
+        on_delete=models.CASCADE
     )
 
     def __str__(self):
-        return f'{self.genre} {self.title}'
+        return f'{self.genre} - {self.title}'
 
 
 class Review(models.Model):
@@ -76,7 +76,9 @@ class Review(models.Model):
         on_delete=models.CASCADE,
         related_name='reviews'
     )
-    score = models.PositiveSmallIntegerField()
+    score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(10)]
+    )
     pub_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
