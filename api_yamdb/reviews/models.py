@@ -1,8 +1,73 @@
 from django.db import models
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
+from api.constants import (ADMIN,
+                           LIMIT_EMAIL,
+                           LIMIT_USERNAME,
+                           MODERATOR,
+                           OUTPUT_LENGTH,
+                           ROLE_CHOICES,
+                           ROLE_MAX_LENGTH,
+                           USER)
+from api.validators import user_validator
 
-User = get_user_model()
+
+class User(AbstractUser):
+    username = models.CharField(
+        max_length=LIMIT_USERNAME,
+        unique=True,
+        validators=[
+            user_validator
+        ],
+    )
+    email = models.EmailField(
+        verbose_name="Электронная почта",
+        max_length=LIMIT_EMAIL,
+        unique=True,
+    )
+    role = models.CharField(
+        verbose_name="Роль",
+        max_length=ROLE_MAX_LENGTH,
+        choices=ROLE_CHOICES,
+        default=USER,
+    )
+    bio = models.TextField(
+        verbose_name="Биография",
+        blank=True,
+    )
+    first_name = models.CharField(
+        verbose_name="Имя",
+        max_length=LIMIT_USERNAME,
+        blank=True,
+    )
+    last_name = models.CharField(
+        verbose_name="Фамилия",
+        max_length=LIMIT_USERNAME,
+        blank=True,
+    )
+
+    def has_role(self, role):
+        """Проверяет, имеет ли пользователь указанную роль."""
+        return self.role == role
+
+    @property
+    def is_moderator(self):
+        """Проверяет, является ли пользователь модератором."""
+        return self.has_role(MODERATOR)
+
+    @property
+    def is_admin(self):
+        """Проверяет, является ли пользователь администратором."""
+        return self.has_role(ADMIN) or self.is_superuser or self.is_staff
+
+    class Meta:
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
+        ordering = ("username",)
+
+    def __str__(self):
+        """Строковое представление пользователя."""
+        return self.username[:OUTPUT_LENGTH]
 
 
 class Category(models.Model):

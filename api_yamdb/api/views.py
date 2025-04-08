@@ -1,15 +1,32 @@
-from rest_framework import viewsets, permissions
-from rest_framework.exceptions import NotFound
+from django.contrib.auth.tokens import default_token_generator
+from rest_framework import (viewsets,
+                            permissions,
+                            serializers,
+                            status,
+                            generics,
+                            views)
 
-from reviews.models import Genre, Category, Title, Review, Comment
-# from .permissions import AdminOrReadOnly 
+from rest_framework.exceptions import NotFound
+from rest_framework.filters import SearchFilter
+from rest_framework.response import Response
+from rest_framework.decorators import action
+
+from reviews.models import Genre, Category, Title, Review
+# from .permissions import AdminOrReadOnly
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
     GenreSerializer,
     ReviewSerializer,
-    TitleSerializer
+    TitleSerializer,
+    TokenObtainSerializer,
+    UserSerializer,
+    SignUpSerializer,
 )
+
+from api.utils import send_confirmation_code
+from reviews.models import User
+from api.permissions import IsAdminByRole
 
 
 class GenreViewSet(viewsets.ModelViewSet):
@@ -20,7 +37,7 @@ class GenreViewSet(viewsets.ModelViewSet):
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    #permission_classes = (AdminOrReadOnly,)
+    # permission_classes = (AdminOrReadOnly,)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -31,7 +48,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    #permission_classes = (AdminOrReadOnly,)
+    # permission_classes = (AdminOrReadOnly,)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -108,3 +125,75 @@ class CommentViewSet(viewsets.ModelViewSet):
         except Review.DoesNotExist:
             raise NotFound("Отзыв не найден.")
         serializer.save(author=self.request.user, review=review)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by('username')
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [SearchFilter]
+    search_fields = ['username']
+    lookup_field = 'username'
+    http_method_names = ['get', 'post', 'delete', 'patch']
+
+    def get_permissions(self):
+        if self.action in [
+            'list',
+            'create',
+            'retrieve',
+            'update',
+            'partial_update',
+            'destroy'
+        ]:
+            self.permission_classes = [IsAdminByRole]
+        return super().get_permissions()
+
+    @action(
+        detail=False,
+        methods=['get', 'put', 'patch'],
+        permission_classes=[permissions.IsAuthenticated]
+    )
+    def me(self, request):
+        user = request.user
+        serializer = None
+
+        if request.method == 'GET':
+            serializer = self.get_serializer(user)
+        elif request.method in ['PUT', 'PATCH']:
+            serializer = self.get_serializer(
+                user,
+                data=request.data,
+                partial=request.method == 'PATCH'
+            )
+            serializer.is_valid(raise_exception=True)
+            if 'role' in serializer.validated_data:
+                if serializer.validated_data['role'] != user.role:
+                    raise serializers.ValidationError("Изменение запрещено.")
+            serializer.save()
+        if serializer is not None:
+            return Response(serializer.data)
+
+
+class SignUpViewSet(generics.GenericAPIView):
+    queryset = User.objects.all().order_by('username')
+    serializer_class = SignUpSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        confirmation_code = default_token_generator.make_token(user)
+        send_confirmation_code(
+            email=user.email,
+            confirmation_code=confirmation_code
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TokenObtainView(views.APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = TokenObtainSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
