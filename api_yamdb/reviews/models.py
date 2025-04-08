@@ -1,18 +1,21 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db import models
+
 from api.constants import (ADMIN,
                            LIMIT_EMAIL,
                            LIMIT_USERNAME,
+                           NAME_LENGTH,
                            MODERATOR,
                            OUTPUT_LENGTH,
                            ROLE_CHOICES,
                            ROLE_MAX_LENGTH,
                            USER)
-from api.validators import user_validator, title_year_validator
+from api.validators import title_year_validator, user_validator
 
 
 class User(AbstractUser):
+    """Модель пользователя."""
     username = models.CharField(
         max_length=LIMIT_USERNAME,
         unique=True,
@@ -73,8 +76,8 @@ class User(AbstractUser):
 class Category(models.Model):
     """Модель категории произведения."""
 
-    name = models.CharField('Категория', max_length=256, unique=True)
-    slug = models.SlugField('Слаг категории', max_length=50, unique=True)
+    name = models.CharField('Категория', max_length=NAME_LENGTH, unique=True)
+    slug = models.SlugField('Слаг категории', unique=True)
 
     class Meta:
         verbose_name = 'Категория'
@@ -88,8 +91,8 @@ class Category(models.Model):
 class Genre(models.Model):
     """Модель жанра произведения."""
 
-    name = models.CharField('Жанр', max_length=256, unique=True)
-    slug = models.SlugField('Слаг жанра', max_length=50, unique=True)
+    name = models.CharField('Жанр', max_length=NAME_LENGTH, unique=True)
+    slug = models.SlugField('Слаг жанра', unique=True)
 
     class Meta:
         verbose_name = 'Жанр'
@@ -103,7 +106,7 @@ class Genre(models.Model):
 class Title(models.Model):
     """Модель произведения."""
 
-    name = models.CharField('Произведение', max_length=256)
+    name = models.CharField('Произведение', max_length=NAME_LENGTH)
     year = models.PositiveSmallIntegerField(
         'Год выпуска', validators=[title_year_validator])
     description = models.TextField('Описание', null=True, blank=True)

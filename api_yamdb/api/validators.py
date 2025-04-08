@@ -1,14 +1,15 @@
-from django.core.exceptions import ValidationError
+from datetime import datetime
+
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.exceptions import ValidationError
 from django.core.validators import ValidationError as DjangoValidationError
 from rest_framework import serializers
-
-from datetime import datetime
 
 from api.constants import NOT_ALLOWED_USERNAME
 
 
 def user_validator(value):
+    """Валидатор для проверки имени пользователя."""
     if value.lower() in NOT_ALLOWED_USERNAME:
         raise ValidationError(f'{value} не может стать именем пользователя.')
     try:

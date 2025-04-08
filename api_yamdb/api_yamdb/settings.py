@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'reviews.apps.ReviewsConfig',
     'django_extensions',
     'rest_framework',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
