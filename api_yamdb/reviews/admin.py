@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Title, Category, Genre, GenreTitle, Review
+from .models import Title, Category, Genre, GenreTitle, Review, User
+from django.contrib.auth.admin import UserAdmin
 
 
 class GenreTitleInline(admin.TabularInline):
@@ -45,3 +46,33 @@ class ReviewAdmin(admin.ModelAdmin):
 @admin.register(GenreTitle)
 class GenreTitleAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'genre')
+
+@admin.register(User)
+class UserAdmin(UserAdmin):
+    list_display = (
+        'username', 'email', 'first_name',
+        'last_name', 'role', 'is_staff'
+    )
+    list_filter = ('role', 'is_staff', 'is_superuser')
+    search_fields = ('username', 'email', 'first_name', 'last_name')
+    ordering = ('username',)
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal Info', {'fields': (
+            'first_name', 'last_name', 'email', 'bio'
+        )}),
+        ('Permissions', {'fields': (
+            'role', 'is_active', 'is_staff', 'is_superuser'
+        )}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': (
+                'username', 'email', 'password1',
+                'password2', 'role', 'is_staff', 'is_superuser'
+            ),
+        }),
+    )
+    filter_horizontal = ()
