@@ -19,7 +19,7 @@ class TitleAdmin(admin.ModelAdmin):
     search_fields = ('name',)
     list_filter = ('year', 'category')
     inlines = [GenreTitleInline, ReviewInline]
-    filter_horizontal = ('genre',)
+    filter_horizontal = ('genres',)
 
 
 @admin.register(Category)
