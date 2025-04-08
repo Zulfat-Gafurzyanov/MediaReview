@@ -1,3 +1,6 @@
+from django.db.models import Avg
+
+from rest_framework import viewsets, permissions
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework import (viewsets,
                             permissions,
@@ -22,6 +25,8 @@ from .serializers import (
     TokenObtainSerializer,
     UserSerializer,
     SignUpSerializer,
+    TitleReadSerializer,
+    TitleWriteSerializer
 )
 
 from api.utils import send_confirmation_code
@@ -59,8 +64,13 @@ class TitleViewSet(viewsets.ModelViewSet):
     - /api/v1/titles/<titles_id>/
     """
 
-    queryset = Title.objects.all()
-    serializer_class = TitleSerializer
+    queryset = Title.objects.annotate(rating=Avg("reviews__score"))
+    #permission_classes = (AdminOrReadOnly,)
+
+    def get_serializer_class(self):
+        if self.request.method in ["POST", "PATCH"]:
+            return TitleWriteSerializer
+        return TitleReadSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
