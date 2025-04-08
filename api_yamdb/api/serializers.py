@@ -1,6 +1,9 @@
-from django.shortcuts import get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+
+from api.constants import LIMIT_EMAIL, LIMIT_USERNAME
+from api.validators import user_validator
 from reviews.models import (Category,
                             Comment,
                             Genre,
@@ -8,9 +11,6 @@ from reviews.models import (Category,
                             Review,
                             Title,
                             User)
-
-from api.constants import LIMIT_USERNAME, LIMIT_EMAIL
-from api.validators import user_validator
 
 
 class GenreSerializer(serializers.ModelSerializer):
