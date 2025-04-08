@@ -1,32 +1,31 @@
 from django.contrib.auth.tokens import default_token_generator
+from django.db.models import Avg
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (viewsets,
                             permissions,
                             serializers,
                             status,
                             generics,
                             views)
-
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
-from rest_framework.decorators import action
 
-from reviews.models import Genre, Category, Title, Review
-# from .permissions import AdminOrReadOnly
-from .serializers import (
+from api.serializers import (
     CategorySerializer,
     CommentSerializer,
     GenreSerializer,
     ReviewSerializer,
-    TitleSerializer,
     TokenObtainSerializer,
     UserSerializer,
     SignUpSerializer,
+    TitleReadSerializer,
+    TitleWriteSerializer
 )
-
+from api.permissions import IsAdminByRole, AdminOrReadOnly
 from api.utils import send_confirmation_code
-from reviews.models import User
-from api.permissions import IsAdminByRole
+from reviews.models import User, Genre, Category, Title, Review
 
 
 class GenreViewSet(viewsets.ModelViewSet):
@@ -37,7 +36,9 @@ class GenreViewSet(viewsets.ModelViewSet):
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    # permission_classes = (AdminOrReadOnly,)
+    permission_classes = (AdminOrReadOnly,)
+    filter_backends = (SearchFilter,)
+    search_fields = ('name',)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -48,7 +49,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    # permission_classes = (AdminOrReadOnly,)
+    permission_classes = (AdminOrReadOnly,)
+    filter_backends = (SearchFilter,)
+    search_fields = ('name',)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -59,8 +62,15 @@ class TitleViewSet(viewsets.ModelViewSet):
     - /api/v1/titles/<titles_id>/
     """
 
-    queryset = Title.objects.all()
-    serializer_class = TitleSerializer
+    queryset = Title.objects.annotate(rating=Avg("reviews__score"))
+    permission_classes = (AdminOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('category', 'genre', 'name', 'year')
+
+    def get_serializer_class(self):
+        if self.request.method in ["POST", "PATCH"]:
+            return TitleWriteSerializer
+        return TitleReadSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
