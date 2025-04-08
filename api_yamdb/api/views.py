@@ -1,6 +1,4 @@
 from django.db.models import Avg
-
-from rest_framework import viewsets, permissions
 from django.contrib.auth.tokens import default_token_generator
 from rest_framework import (viewsets,
                             permissions,
@@ -14,14 +12,13 @@ from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from reviews.models import Genre, Category, Title, Review
-# from .permissions import AdminOrReadOnly
-from .serializers import (
+from reviews.models import User, Genre, Category, Title, Review
+
+from api.serializers import (
     CategorySerializer,
     CommentSerializer,
     GenreSerializer,
     ReviewSerializer,
-    TitleSerializer,
     TokenObtainSerializer,
     UserSerializer,
     SignUpSerializer,
@@ -30,8 +27,7 @@ from .serializers import (
 )
 
 from api.utils import send_confirmation_code
-from reviews.models import User
-from api.permissions import IsAdminByRole
+from api.permissions import IsAdminByRole, AdminOrReadOnly
 
 
 class GenreViewSet(viewsets.ModelViewSet):
@@ -53,7 +49,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    # permission_classes = (AdminOrReadOnly,)
+    permission_classes = (AdminOrReadOnly,)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -65,7 +61,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Title.objects.annotate(rating=Avg("reviews__score"))
-    #permission_classes = (AdminOrReadOnly,)
+    permission_classes = (AdminOrReadOnly,)
 
     def get_serializer_class(self):
         if self.request.method in ["POST", "PATCH"]:

@@ -9,7 +9,7 @@ from api.constants import (ADMIN,
                            ROLE_CHOICES,
                            ROLE_MAX_LENGTH,
                            USER)
-from api.validators import user_validator
+from api.validators import user_validator, title_year_validator
 
 
 class User(AbstractUser):
@@ -79,6 +79,7 @@ class Category(models.Model):
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -93,6 +94,7 @@ class Genre(models.Model):
     class Meta:
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -102,7 +104,8 @@ class Title(models.Model):
     """Модель произведения."""
 
     name = models.CharField('Произведение', max_length=256)
-    year = models.PositiveSmallIntegerField('Год выпуска')  # Нужно добавить валитор по году выпуска
+    year = models.PositiveSmallIntegerField(
+        'Год выпуска', validators=[title_year_validator])
     description = models.TextField('Описание', null=True, blank=True)
     category = models.ForeignKey(
         Category,
@@ -121,6 +124,7 @@ class Title(models.Model):
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
+        ordering = ['name']
 
     def __str__(self):
         return self.name
