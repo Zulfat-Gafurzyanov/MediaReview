@@ -6,7 +6,10 @@ from api.views import (
     CommentViewSet,
     GenreViewSet,
     ReviewViewSet,
-    TitleViewSet
+    TitleViewSet,
+    UserViewSet,
+    SignUpViewSet,
+    TokenObtainView,
 )
 
 APIVERSION = 'v1'
@@ -26,7 +29,18 @@ router_v1.register(
     CommentViewSet,
     basename='comment'
 )
+router_v1.register('users', UserViewSet, basename='users')
 
 urlpatterns = [
-    path(f'{APIVERSION}/', include(router_v1.urls))
+    path(f'{APIVERSION}/', include(router_v1.urls)),
+    path(
+        f'{APIVERSION}/auth/signup/',
+        SignUpViewSet.as_view(),
+        name='signup'
+    ),
+    path(
+        f'{APIVERSION}/auth/token/',
+        TokenObtainView.as_view(),
+        name='token_obtain'
+    ),
 ]
