@@ -47,6 +47,7 @@ class ReviewAdmin(admin.ModelAdmin):
 class GenreTitleAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'genre')
 
+
 @admin.register(User)
 class UserAdmin(UserAdmin):
     list_display = (
