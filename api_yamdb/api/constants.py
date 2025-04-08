@@ -15,4 +15,4 @@ ROLE_CHOICES = (
 
 ROLE_MAX_LENGTH = max(len(role) for role, _ in ROLE_CHOICES)
 
-NOT_ALLOWED_USERNAME = ('I',)
+NOT_ALLOWED_USERNAME = ('me',)
