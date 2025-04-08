@@ -8,8 +8,12 @@ User = get_user_model()
 class Category(models.Model):
     """Модель категории произведения."""
 
-    name = models.CharField(max_length=256, unique=True)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField('Категория', max_length=256, unique=True)
+    slug = models.SlugField('Слаг категории', max_length=50, unique=True)
+
+    class Meta:
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
 
     def __str__(self):
         return self.name
@@ -18,8 +22,12 @@ class Category(models.Model):
 class Genre(models.Model):
     """Модель жанра произведения."""
 
-    name = models.CharField(max_length=256, unique=True)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField('Жанр', max_length=256, unique=True)
+    slug = models.SlugField('Слаг жанра', max_length=50, unique=True)
+
+    class Meta:
+        verbose_name = 'Жанр'
+        verbose_name_plural = 'Жанры'
 
     def __str__(self):
         return self.name
@@ -28,20 +36,26 @@ class Genre(models.Model):
 class Title(models.Model):
     """Модель произведения."""
 
-    name = models.CharField(max_length=256)
-    year = models.PositiveSmallIntegerField()
-    description = models.TextField(blank=True)
+    name = models.CharField('Произведение', max_length=256)
+    year = models.PositiveSmallIntegerField('Год выпуска')  # Нужно добавить валитор по году выпуска
+    description = models.TextField('Описание', null=True, blank=True)
     category = models.ForeignKey(
         Category,
         related_name='titles',
         on_delete=models.SET_NULL,
-        null=True
+        null=True,
+        verbose_name='Категория'
     )
-    genres = models.ManyToManyField(
+    genre = models.ManyToManyField(
         Genre,
         through='GenreTitle',
-        related_name='titles'
+        related_name='titles',
+        verbose_name='Жанр'
     )
+
+    class Meta:
+        verbose_name = 'Произведение'
+        verbose_name_plural = 'Произведения'
 
     def __str__(self):
         return self.name
@@ -86,6 +100,8 @@ class Review(models.Model):
     class Meta:
         unique_together = ('title', 'author')
         ordering = ['-pub_date']
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
 
     def __str__(self):
         return f'Review by {self.author} on {self.title}'
@@ -108,6 +124,8 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ['-pub_date']
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
 
     def __str__(self):
         return f'Comment by {self.author} on review {self.review.id}'
