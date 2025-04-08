@@ -23,7 +23,8 @@ from api.serializers import (
     TitleReadSerializer,
     TitleWriteSerializer
 )
-from api.permissions import IsAdminByRole, AdminOrReadOnly
+from api.filters import TitleFilter
+from api.permissions import IsAdminByRole, AdminOrReadOnly, AdminOrModeratorOrAuthorOrReadOnly
 from api.utils import send_confirmation_code
 from reviews.models import User, Genre, Category, Title, Review
 
@@ -65,8 +66,9 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(rating=Avg("reviews__score"))
     permission_classes = (AdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('category', 'genre', 'name', 'year')
-
+    #filterset_fields = ('category', 'genre', 'name', 'year')
+    filterset_class = TitleFilter
+    
     def get_serializer_class(self):
         if self.request.method in ["POST", "PATCH"]:
             return TitleWriteSerializer
@@ -81,7 +83,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
     - /api/v1/titles/<title_id>/reviews/<review_id>/
     """
     serializer_class = ReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [AdminOrModeratorOrAuthorOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
