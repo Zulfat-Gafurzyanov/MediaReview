@@ -71,7 +71,8 @@ class TitleReadSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(
         read_only=True,
-        many=True
+        many=True,
+        source='genres'
     )
     rating = serializers.IntegerField(read_only=True)
 
@@ -85,24 +86,17 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     """Сериализатор для записи в модель произведения."""
     category = serializers.SlugRelatedField(
         slug_field='slug', queryset=Category.objects.all())
-    genres = serializers.SlugRelatedField(
-        slug_field='slug', queryset=Genre.objects.all(), many=True)
+    genre = serializers.SlugRelatedField(
+        slug_field='slug', queryset=Genre.objects.all(), many=True, source='genres')
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'description', 'category', 'genres')
+        fields = ('id', 'name', 'year', 'description', 'category', 'genre')
 
     def create(self, validated_data):
-        """Функция для сохранения произведения."""
-
-        # Извлекаем жанры и категорию, остальные поля передаем через
-        # **validated_data. Создаем произведение.
         genres = validated_data.pop('genres')
-        category = validated_data.pop('category')
-        title = Title.objects.create(category=category, **validated_data)
-        # Связываем жанры с произведением.
-        for genre in genres:
-            GenreTitle.objects.create(genre=genre, title=title)
+        title = Title.objects.create(**validated_data)
+        title.genres.set(genres)
         return title
 
 

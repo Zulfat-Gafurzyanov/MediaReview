@@ -91,6 +91,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_serializer_class(self):
         if self.request.method in ['POST', 'PATCH']:
@@ -134,8 +135,9 @@ class CommentViewSet(viewsets.ModelViewSet):
     - /api/v1/titles/<title_id>/reviews/<review_id>/comments/<comment_id>/
     """
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
+    permission_classes = [AdminOrModeratorOrAuthorOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
         review_id = self.kwargs.get('review_id')
