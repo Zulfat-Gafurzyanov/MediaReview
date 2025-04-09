@@ -1,35 +1,59 @@
 from django.contrib.auth.tokens import default_token_generator
-from rest_framework import (viewsets,
-                            permissions,
-                            serializers,
-                            status,
-                            generics,
-                            views)
-
+from django.db.models import Avg
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.filters import SearchFilter
+from rest_framework.generics import GenericAPIView
+from rest_framework.mixins import (
+    CreateModelMixin,
+    DestroyModelMixin,
+    ListModelMixin
+)
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.serializers import ValidationError
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from reviews.models import Genre, Category, Title, Review
-# from .permissions import AdminOrReadOnly
-from .serializers import (
+from api.filters import TitleFilter
+from api.permissions import (
+    AdminOrModeratorOrAuthorOrReadOnly,
+    AdminOrReadOnly,
+    IsAdminByRole
+)
+from api.serializers import (
     CategorySerializer,
     CommentSerializer,
     GenreSerializer,
     ReviewSerializer,
-    TitleSerializer,
     TokenObtainSerializer,
     UserSerializer,
     SignUpSerializer,
+    TitleReadSerializer,
+    TitleWriteSerializer
 )
-
 from api.utils import send_confirmation_code
-from reviews.models import User
-from api.permissions import IsAdminByRole
+from reviews.models import Category, Genre, Review, Title, User
 
 
-class GenreViewSet(viewsets.ModelViewSet):
+class ListCreateDestroyMixinSet(ListModelMixin,
+                                CreateModelMixin,
+                                DestroyModelMixin,
+                                GenericViewSet):
+    """
+    MixinSet для моделей Category и Genre.
+
+    Обрабатываемые методы:
+        - GET — получает список всех категорий или жанров.
+        - POST — добавляет категорию или жанр.
+        - DEL — удаляет категорию или жанр.
+    """
+    pass
+
+
+class GenreViewSet(ListCreateDestroyMixinSet):
     """
     ViewSet для работы с жанрами.
     Эндпоинт: /api/v1/genres/
@@ -37,10 +61,13 @@ class GenreViewSet(viewsets.ModelViewSet):
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    # permission_classes = (AdminOrReadOnly,)
+    permission_classes = (AdminOrReadOnly,)
+    filter_backends = (SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(ListCreateDestroyMixinSet):
     """
     ViewSet для работы с категориями.
     Эндпоинт: /api/v1/categories/
@@ -48,10 +75,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    # permission_classes = (AdminOrReadOnly,)
+    permission_classes = (AdminOrReadOnly,)
+    filter_backends = (SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
 
 
-class TitleViewSet(viewsets.ModelViewSet):
+class TitleViewSet(ModelViewSet):
     """
     ViewSet для работы с произведениями.
     Эндпоинты:
@@ -59,11 +89,19 @@ class TitleViewSet(viewsets.ModelViewSet):
     - /api/v1/titles/<titles_id>/
     """
 
-    queryset = Title.objects.all()
-    serializer_class = TitleSerializer
+    queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
+    permission_classes = (AdminOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = TitleFilter
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def get_serializer_class(self):
+        if self.request.method in ['POST', 'PATCH']:
+            return TitleWriteSerializer
+        return TitleReadSerializer
 
 
-class ReviewViewSet(viewsets.ModelViewSet):
+class ReviewViewSet(ModelViewSet):
     """
     ViewSet для работы с отзывами.
     Эндпоинты:
@@ -71,7 +109,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
     - /api/v1/titles/<title_id>/reviews/<review_id>/
     """
     serializer_class = ReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [AdminOrModeratorOrAuthorOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
@@ -90,7 +129,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, title=title)
 
 
-class CommentViewSet(viewsets.ModelViewSet):
+class CommentViewSet(ModelViewSet):
     """
     ViewSet для работы с комментариями к отзывам.
     Эндпоинты:
@@ -98,7 +137,8 @@ class CommentViewSet(viewsets.ModelViewSet):
     - /api/v1/titles/<title_id>/reviews/<review_id>/comments/<comment_id>/
     """
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [AdminOrModeratorOrAuthorOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
@@ -127,10 +167,10 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, review=review)
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(ModelViewSet):
     queryset = User.objects.all().order_by('username')
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter]
     search_fields = ['username']
     lookup_field = 'username'
@@ -151,7 +191,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=['get', 'put', 'patch'],
-        permission_classes=[permissions.IsAuthenticated]
+        permission_classes=[IsAuthenticated]
     )
     def me(self, request):
         user = request.user
@@ -168,13 +208,13 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             if 'role' in serializer.validated_data:
                 if serializer.validated_data['role'] != user.role:
-                    raise serializers.ValidationError("Изменение запрещено.")
+                    raise ValidationError("Изменение запрещено.")
             serializer.save()
         if serializer is not None:
             return Response(serializer.data)
 
 
-class SignUpViewSet(generics.GenericAPIView):
+class SignUpViewSet(GenericAPIView):
     queryset = User.objects.all().order_by('username')
     serializer_class = SignUpSerializer
 
@@ -190,8 +230,8 @@ class SignUpViewSet(generics.GenericAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class TokenObtainView(views.APIView):
-    permission_classes = (permissions.AllowAny,)
+class TokenObtainView(APIView):
+    permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
         serializer = TokenObtainSerializer(data=request.data)
