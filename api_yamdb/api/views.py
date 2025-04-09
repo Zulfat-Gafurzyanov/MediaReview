@@ -1,17 +1,26 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import (viewsets,
-                            permissions,
-                            serializers,
-                            status,
-                            generics,
-                            views)
+from rest_framework import (
+    viewsets,
+    permissions,
+    serializers,
+    mixins,
+    status,
+    generics,
+    views
+)
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 
+from api.filters import TitleFilter
+from api.permissions import (
+    AdminOrModeratorOrAuthorOrReadOnly,
+    AdminOrReadOnly,
+    IsAdminByRole
+)
 from api.serializers import (
     CategorySerializer,
     CommentSerializer,
@@ -23,13 +32,26 @@ from api.serializers import (
     TitleReadSerializer,
     TitleWriteSerializer
 )
-from api.filters import TitleFilter
-from api.permissions import IsAdminByRole, AdminOrReadOnly, AdminOrModeratorOrAuthorOrReadOnly
 from api.utils import send_confirmation_code
-from reviews.models import User, Genre, Category, Title, Review
+from reviews.models import Category, Genre, Review, Title, User
 
 
-class GenreViewSet(viewsets.ModelViewSet):
+class ListCreateDestroyMixinSet(mixins.ListModelMixin,
+                                mixins.CreateModelMixin,
+                                mixins.DestroyModelMixin,
+                                viewsets.GenericViewSet):
+    """
+    MixinSet для моделей Category и Genre.
+
+    Обрабатываемые методы:
+        - GET — получает список всех категорий или жанров.
+        - POST — добавляет категорию или жанр.
+        - DEL — удаляет категорию или жанр.
+    """
+    pass
+
+
+class GenreViewSet(ListCreateDestroyMixinSet):
     """
     ViewSet для работы с жанрами.
     Эндпоинт: /api/v1/genres/
@@ -40,9 +62,10 @@ class GenreViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminOrReadOnly,)
     filter_backends = (SearchFilter,)
     search_fields = ('name',)
+    lookup_field = 'slug'
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(ListCreateDestroyMixinSet):
     """
     ViewSet для работы с категориями.
     Эндпоинт: /api/v1/categories/
@@ -53,6 +76,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminOrReadOnly,)
     filter_backends = (SearchFilter,)
     search_fields = ('name',)
+    lookup_field = 'slug'
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -63,14 +87,13 @@ class TitleViewSet(viewsets.ModelViewSet):
     - /api/v1/titles/<titles_id>/
     """
 
-    queryset = Title.objects.annotate(rating=Avg("reviews__score"))
+    queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
     permission_classes = (AdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
-    #filterset_fields = ('category', 'genre', 'name', 'year')
     filterset_class = TitleFilter
-    
+
     def get_serializer_class(self):
-        if self.request.method in ["POST", "PATCH"]:
+        if self.request.method in ['POST', 'PATCH']:
             return TitleWriteSerializer
         return TitleReadSerializer
 
