@@ -3,6 +3,8 @@ from django.core.mail import send_mail
 
 
 def send_confirmation_code(email, confirmation_code):
+    """Отправляет код подтверждения на email."""
+
     subject = 'Код подтверждения YaMDb'
     message = f'Ваш код подтверждения YaMDb: {confirmation_code}'
 

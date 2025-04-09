@@ -1,6 +1,7 @@
 from django.contrib import admin
-from .models import Title, Category, Genre, GenreTitle, Review, User
 from django.contrib.auth.admin import UserAdmin
+
+from .models import Title, Category, Genre, GenreTitle, Review, User
 
 
 class GenreTitleInline(admin.TabularInline):

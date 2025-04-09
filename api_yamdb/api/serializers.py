@@ -4,13 +4,14 @@ from rest_framework import serializers
 
 from api.constants import LIMIT_EMAIL, LIMIT_USERNAME
 from api.validators import user_validator
-from reviews.models import (Category,
-                            Comment,
-                            Genre,
-                            GenreTitle,
-                            Review,
-                            Title,
-                            User)
+from reviews.models import (
+    Category,
+    Comment,
+    Genre,
+    Review,
+    Title,
+    User
+)
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -31,6 +32,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     """Сериализатор для модели отзывов."""
+
     author = serializers.ReadOnlyField(source='author.username')
     pub_date = serializers.ReadOnlyField()
 
@@ -39,6 +41,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ('id', 'text', 'author', 'score', 'pub_date')
 
     def validate_score(self, value):
+        """Проверка значения оценки."""
         if not (1 <= value <= 10):
             raise serializers.ValidationError("Оценка должна быть от 1 до 10.")
         return value
@@ -50,7 +53,10 @@ class ReviewSerializer(serializers.ModelSerializer):
 
         if request and request.method == 'POST':
             author = request.user
-            if Review.objects.filter(title_id=title_id, author=author).exists():
+            if Review.objects.filter(
+                title_id=title_id,
+                author=author
+            ).exists():
                 raise serializers.ValidationError(
                     'Вы уже оставляли отзыв на это произведение.'
                 )
@@ -58,6 +64,8 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """Сериализатор для модели комментариев."""
+
     author = serializers.ReadOnlyField(source='author.username')
     pub_date = serializers.ReadOnlyField()
 
@@ -68,6 +76,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class TitleReadSerializer(serializers.ModelSerializer):
     """Сериализатор для чтения модели произведения."""
+
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(
         read_only=True,
@@ -84,23 +93,20 @@ class TitleReadSerializer(serializers.ModelSerializer):
 
 class TitleWriteSerializer(serializers.ModelSerializer):
     """Сериализатор для записи в модель произведения."""
+
     category = serializers.SlugRelatedField(
         slug_field='slug', queryset=Category.objects.all())
     genre = serializers.SlugRelatedField(
-        slug_field='slug', queryset=Genre.objects.all(), many=True, source='genres')
+        slug_field='slug', queryset=Genre.objects.all(),
+        many=True, source='genres')
 
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'description', 'category', 'genre')
 
-    def create(self, validated_data):
-        genres = validated_data.pop('genres')
-        title = Title.objects.create(**validated_data)
-        title.genres.set(genres)
-        return title
-
 
 class UserSerializer(serializers.ModelSerializer):
+    """Сериализатор для записи в модель пользователя."""
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name',
@@ -108,6 +114,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UsernameField(serializers.Serializer):
+    """Базовый сериализатор для поля имени пользователя."""
+
     username = serializers.CharField(
         max_length=LIMIT_USERNAME,
         validators=[user_validator],
@@ -115,12 +123,19 @@ class UsernameField(serializers.Serializer):
 
 
 class SignUpSerializer(UsernameField):
+    """Сериализатор для регистрации нового пользователя."""
+
     email = serializers.EmailField(
         max_length=LIMIT_EMAIL,
         required=True
     )
 
     def validate(self, data):
+        """Валидирует данные перед созданием нового пользователя.
+        Проверяется наличие пользователя с такими же именем пользователя и
+        электронной почтой.
+        Если такой пользователь уже существует, возникает ошибка.
+        """
         username_field = data.get('username')
         email_field = data.get('email')
         if User.objects.filter(
@@ -137,18 +152,22 @@ class SignUpSerializer(UsernameField):
         return data
 
     def create(self, validated_data):
+        """Создает нового пользователя на основе проверенных данных."""
         return User.objects.get_or_create(**validated_data)[0]
 
 
 class TokenObtainSerializer(UsernameField):
+    """Сериализатор для получения токена авторизации."""
+
     confirmation_code = serializers.CharField()
 
     def validate(self, data):
+        """Валидирует данные перед получением токена авторизации."""
         username = data.get('username')
         confirmation_code = data.get('confirmation_code')
         user = get_object_or_404(User, username=username)
         if not default_token_generator.check_token(user, confirmation_code):
             raise serializers.ValidationError(
-                "Код подтверждения невалиден"
+                "Код подтверждения невалиден."
             )
         return data
