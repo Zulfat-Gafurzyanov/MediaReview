@@ -1,5 +1,6 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action
@@ -113,19 +114,11 @@ class ReviewViewSet(ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
-        title_id = self.kwargs.get('title_id')
-        try:
-            title = Title.objects.get(pk=title_id)
-        except Title.DoesNotExist:
-            raise NotFound("Произведение не найдено.")
+        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
         return title.reviews.all()
 
     def perform_create(self, serializer):
-        title_id = self.kwargs.get('title_id')
-        try:
-            title = Title.objects.get(pk=title_id)
-        except Title.DoesNotExist:
-            raise NotFound("Произведение не найдено.")
+        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
         serializer.save(author=self.request.user, title=title)
 
 
@@ -141,29 +134,19 @@ class CommentViewSet(ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
-        title_id = self.kwargs.get('title_id')
-        review_id = self.kwargs.get('review_id')
-        try:
-            title = Title.objects.get(pk=title_id)
-        except Title.DoesNotExist:
-            raise NotFound("Произведение не найдено.")
-        try:
-            review = title.reviews.get(pk=review_id)
-        except Review.DoesNotExist:
-            raise NotFound("Отзыв не найден.")
+        review = get_object_or_404(
+            Review,
+            pk=self.kwargs.get('review_id'),
+            title__pk=self.kwargs.get('title_id')
+        )
         return review.comments.all()
 
     def perform_create(self, serializer):
-        title_id = self.kwargs.get('title_id')
-        review_id = self.kwargs.get('review_id')
-        try:
-            title = Title.objects.get(pk=title_id)
-        except Title.DoesNotExist:
-            raise NotFound("Произведение не найдено.")
-        try:
-            review = title.reviews.get(pk=review_id)
-        except Review.DoesNotExist:
-            raise NotFound("Отзыв не найден.")
+        review = get_object_or_404(
+            Review,
+            pk=self.kwargs.get('review_id'),
+            title__pk=self.kwargs.get('title_id')
+        )
         serializer.save(author=self.request.user, review=review)
 
 
@@ -195,23 +178,23 @@ class UserViewSet(ModelViewSet):
     )
     def me(self, request):
         user = request.user
-        serializer = None
 
         if request.method == 'GET':
             serializer = self.get_serializer(user)
-        elif request.method in ['PUT', 'PATCH']:
-            serializer = self.get_serializer(
-                user,
-                data=request.data,
-                partial=request.method == 'PATCH'
-            )
-            serializer.is_valid(raise_exception=True)
-            if 'role' in serializer.validated_data:
-                if serializer.validated_data['role'] != user.role:
-                    raise ValidationError("Изменение запрещено.")
-            serializer.save()
-        if serializer is not None:
             return Response(serializer.data)
+
+        serializer = self.get_serializer(
+            user,
+            data=request.data,
+            partial=request.method == 'PATCH'
+        )
+        serializer.is_valid(raise_exception=True)
+
+        if serializer.validated_data.get('role') and serializer.validated_data['role'] != user.role:
+            raise ValidationError("Изменение роли запрещено.")
+
+        serializer.save()
+        return Response(serializer.data)
 
 
 class SignUpViewSet(GenericAPIView):
