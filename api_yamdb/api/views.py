@@ -4,7 +4,6 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
@@ -191,7 +190,10 @@ class UserViewSet(ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
 
-        if serializer.validated_data.get('role') and serializer.validated_data['role'] != user.role:
+        if (
+            serializer.validated_data.get('role')
+            and serializer.validated_data['role'] != user.role
+        ):
             raise ValidationError("Изменение роли запрещено.")
 
         serializer.save()
