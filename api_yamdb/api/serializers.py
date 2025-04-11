@@ -40,12 +40,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date')
 
-    def validate_score(self, value):
-        """Проверка значения оценки."""
-        if not (1 <= value <= 10):
-            raise serializers.ValidationError("Оценка должна быть от 1 до 10.")
-        return value
-
     def validate(self, data):
         """Проверка: один отзыв на одно произведение от одного пользователя."""
         request = self.context.get('request')
