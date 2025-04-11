@@ -2,16 +2,14 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
-from api.constants import (ADMIN,
-                           LIMIT_EMAIL,
-                           LIMIT_USERNAME,
-                           NAME_LENGTH,
-                           MODERATOR,
-                           OUTPUT_LENGTH,
-                           ROLE_CHOICES,
-                           REVIEW_SCORE_MAX,
-                           REVIEW_SCORE_MIN
-                           USER)
+from api.constants import (
+    LIMIT_EMAIL,
+    LIMIT_USERNAME,
+    NAME_LENGTH,
+    OUTPUT_LENGTH,
+    REVIEW_SCORE_MAX,
+    REVIEW_SCORE_MIN,
+)
 from api.validators import title_year_validator, user_validator
 
 
@@ -62,12 +60,12 @@ class User(AbstractUser):
     @property
     def is_moderator(self):
         """Проверяет, является ли пользователь модератором."""
-        return self.has_role(MODERATOR)
+        return self.has_role(Role.MODERATOR)
 
     @property
     def is_admin(self):
         """Проверяет, является ли пользователь администратором."""
-        return self.has_role(ADMIN) or self.is_superuser or self.is_staff
+        return self.has_role(Role.ADMIN) or self.is_superuser or self.is_staff
 
     class Meta:
         verbose_name = "Пользователь"
