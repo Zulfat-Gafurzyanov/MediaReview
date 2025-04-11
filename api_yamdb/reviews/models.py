@@ -8,10 +8,15 @@ from api.constants import (ADMIN,
                            NAME_LENGTH,
                            MODERATOR,
                            OUTPUT_LENGTH,
-                           ROLE_CHOICES,
-                           ROLE_MAX_LENGTH,
                            USER)
 from api.validators import title_year_validator, user_validator
+
+
+class Role(models.TextChoices):
+    """Набор ролей пользователей."""
+    USER = 'user', 'Пользователь'
+    MODERATOR = 'moderator', 'Модератор'
+    ADMIN = 'admin', 'Администратор'
 
 
 class User(AbstractUser):
@@ -19,9 +24,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=LIMIT_USERNAME,
         unique=True,
-        validators=[
-            user_validator
-        ],
+        validators=[user_validator],
     )
     email = models.EmailField(
         verbose_name="Электронная почта",
@@ -30,9 +33,9 @@ class User(AbstractUser):
     )
     role = models.CharField(
         verbose_name="Роль",
-        max_length=ROLE_MAX_LENGTH,
-        choices=ROLE_CHOICES,
-        default=USER,
+        max_length=max(len(choice) for choice, _ in Role.choices),
+        choices=Role.choices,
+        default=Role.USER,
     )
     bio = models.TextField(
         verbose_name="Биография",
@@ -73,11 +76,18 @@ class User(AbstractUser):
         return self.username[:OUTPUT_LENGTH]
 
 
-class Category(models.Model):
-    """Модель категории произведения."""
+class Basemodel(models.Model):
+    """Базовая модель для моделей: Category и Title."""
 
     name = models.CharField('Категория', max_length=NAME_LENGTH, unique=True)
     slug = models.SlugField('Слаг категории', unique=True)
+
+    class Meta:
+        abstract = True
+
+
+class Category(Basemodel):
+    """Модель категории произведения."""
 
     class Meta:
         verbose_name = 'Категория'
@@ -88,11 +98,8 @@ class Category(models.Model):
         return self.name
 
 
-class Genre(models.Model):
+class Genre(Basemodel):
     """Модель жанра произведения."""
-
-    name = models.CharField('Жанр', max_length=NAME_LENGTH, unique=True)
-    slug = models.SlugField('Слаг жанра', unique=True)
 
     class Meta:
         verbose_name = 'Жанр'
@@ -107,7 +114,7 @@ class Title(models.Model):
     """Модель произведения."""
 
     name = models.CharField('Произведение', max_length=NAME_LENGTH)
-    year = models.PositiveSmallIntegerField(
+    year = models.IntegerField(
         'Год выпуска', validators=[title_year_validator])
     description = models.TextField('Описание', null=True, blank=True)
     category = models.ForeignKey(

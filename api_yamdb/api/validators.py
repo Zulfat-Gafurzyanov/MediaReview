@@ -24,3 +24,5 @@ def title_year_validator(value):
     if value > now:
         raise ValidationError(
             f'Год выпуска произведения не может быть больше {now} года')
+    
+
