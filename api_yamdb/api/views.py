@@ -54,7 +54,16 @@ class ListCreateDestroyMixinSet(ListModelMixin,
     pass
 
 
-class GenreViewSet(ListCreateDestroyMixinSet):
+class BaseViewSet(GenericViewSet):
+    """Базовый класс для вьюсетов: GenreViewSet и CategoryViewSet."""
+
+    permission_classes = (AdminOrReadOnly,)
+    filter_backends = (SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
+
+
+class GenreViewSet(BaseViewSet, ListCreateDestroyMixinSet):
     """
     ViewSet для работы с жанрами.
     Эндпоинт: /api/v1/genres/
@@ -62,13 +71,9 @@ class GenreViewSet(ListCreateDestroyMixinSet):
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (AdminOrReadOnly,)
-    filter_backends = (SearchFilter,)
-    search_fields = ('name',)
-    lookup_field = 'slug'
 
 
-class CategoryViewSet(ListCreateDestroyMixinSet):
+class CategoryViewSet(BaseViewSet, ListCreateDestroyMixinSet):
     """
     ViewSet для работы с категориями.
     Эндпоинт: /api/v1/categories/
@@ -76,10 +81,6 @@ class CategoryViewSet(ListCreateDestroyMixinSet):
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (AdminOrReadOnly,)
-    filter_backends = (SearchFilter,)
-    search_fields = ('name',)
-    lookup_field = 'slug'
 
 
 class TitleViewSet(ModelViewSet):

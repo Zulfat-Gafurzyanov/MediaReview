@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from api.constants import LIMIT_EMAIL, LIMIT_USERNAME
-from api.validators import user_validator
+from api.validators import title_year_validator, user_validator
 from reviews.models import (
     Category,
     Comment,
@@ -103,6 +105,14 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'description', 'category', 'genre')
+
+    def validate_year(self, value):
+        """Валидатор для проверки года выпуска произведения."""
+        try:
+            title_year_validator(value)
+        except serializers.ValidationError as e:
+            raise serializers.ValidationError(e.message)
+        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
