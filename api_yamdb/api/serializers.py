@@ -93,18 +93,12 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
         slug_field='slug', queryset=Genre.objects.all(),
         many=True, source='genres')
+    year = serializers.IntegerField(
+        validators=[title_year_validator])
 
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'description', 'category', 'genre')
-
-    def validate_year(self, value):
-        """Валидатор для проверки года выпуска произведения."""
-        try:
-            title_year_validator(value)
-        except serializers.ValidationError as e:
-            raise serializers.ValidationError(e.message)
-        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
